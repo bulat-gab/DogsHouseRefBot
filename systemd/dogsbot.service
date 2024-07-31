@@ -1,12 +1,12 @@
 [Unit]
-Description=DogsBotService
+Description=DogsHouseRefBotService
 After=network.target
 
 [Service]
 User=root
-WorkingDirectory=/home/ubuntu/DogsHouseRefBot/
-Environment=PATH=/home/ubuntu/DogsHouseRefBot/venv/bin/
-ExecStart=/home/ubuntu/DogsHouseRefBot/venv/bin/python3 /home/ubuntu/DogsHouseRefBot/main.py -a 2
+WorkingDirectory=/root/DogsHouseRefBot/
+Environment=PATH=/root/DogsHouseRefBot/venv/bin/
+ExecStart=/root/DogsHouseRefBot/venv/bin/python3 /root/DogsHouseRefBot/main.py -a 1
 
 Restart=always
 
