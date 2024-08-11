@@ -3,6 +3,7 @@ import glob
 import asyncio
 import argparse
 from itertools import cycle
+from typing import Tuple
 
 from pyrogram import Client
 from better_proxy import Proxy
@@ -11,6 +12,9 @@ from bot.config import settings
 from bot.utils import logger
 from bot.core.tapper import run_tapper
 from bot.core.registrator import register_sessions
+
+import json
+
 
 start_text = """
 ██████╗  ██████╗  ██████╗ ███████╗██╗  ██╗ ██████╗ ██╗   ██╗███████╗███████╗██████╗ ███████╗███████╗
@@ -48,6 +52,12 @@ def get_proxies() -> list[Proxy]:
 
     return proxies
 
+def get_proxies_V2() -> json:
+    proxies = None
+    with open(file="proxies.json", encoding="utf-8-sig") as file:
+        proxies = json.load(file)
+        return proxies
+    
 
 async def get_tg_clients() -> list[Client]:
     global tg_clients
@@ -78,7 +88,9 @@ async def process() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("-a", "--action", type=int, help="Action to perform")
 
-    logger.info(f"Detected {len(get_session_names())} sessions | {len(get_proxies())} proxies")
+    len_sessions = len(get_session_names())
+    len_proxies = len(get_proxies_V2())
+    logger.info(f"Detected {len_sessions} sessions | {len_proxies} proxies")
 
     action = parser.parse_args().action
 
@@ -97,9 +109,8 @@ async def process() -> None:
                 break
 
     if action == 1:
-        tg_clients = await get_tg_clients()
-
-        await run_tasks(tg_clients=tg_clients)
+        # Gets proxies from proxy.json file
+        await run_tasks_V2()
 
     elif action == 2:
         await register_sessions()
@@ -118,6 +129,35 @@ async def run_tasks(tg_clients: list[Client]):
             )
         )
         for tg_client in tg_clients
+    ]
+
+    await asyncio.gather(*tasks)
+
+async def run_tasks_V2():
+    tg_clients = await get_tg_clients()
+    proxies = get_proxies_V2()
+
+    client_with_proxy = []
+
+    for tg_client in tg_clients:
+        proxy = proxies.get(tg_client.name)
+        if proxy:
+            proxy = Proxy.from_str(proxy=proxy.strip())
+
+            proxy_client_pair = (proxy, tg_client)
+            client_with_proxy.append(proxy_client_pair)
+        else:
+            logger.critical(f"Could not find proxy for session: {tg_client.name}")
+            exit(1)
+    
+    tasks = [
+        asyncio.create_task(
+            run_tapper(
+                tg_client=client_proxy[1],
+                proxy=client_proxy[0].as_url,
+            )
+        )
+        for client_proxy in client_with_proxy
     ]
 
     await asyncio.gather(*tasks)
