@@ -1,0 +1,13 @@
+[Unit]
+After=docker.service
+Description=Run docker compose DogsHouseRefBot
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/root/DogsHouseRefBot
+ExecStart=/usr/bin/docker compose -f /root/DogsHouseRefBot/docker-compose.yml up -d --remove-orphans
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
